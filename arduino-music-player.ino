@@ -1,8 +1,7 @@
 // Final project: Play music notes from Serial Monitor input with Arduino
 #include <avr/pgmspace.h>
 
-// Example melody stored in PROGMEM (Hot Cross Buns)
-const char hotCrossBuns[] PROGMEM =
+const char hotCrossBuns[] PROGMEM = // Hot Cross Buns
   "E5 400, D5 400, C5 400, E5 400, D5 400, C5 400, "
   "C5 400, C5 400, C5 400, C5 400, D5 400, D5 400, D5 400, D5 400, "
   "E5 400, D5 400, C5 400";
@@ -65,7 +64,7 @@ void setup() {
   // pinMode(speakerPin, OUTPUT);
   // pinMode(ledPin, OUTPUT);
 
-  Serial.println("Enter notes as NOTE then DURATION, with commas or other punctuation to distinguish between notes.");
+  Serial.println("Enter notes as NOTE then DURATION, with commas or dashes as delimiters.");
   Serial.println("Example: E5 400, D5 400, C5 400, NA 200");
 }
 
@@ -73,9 +72,9 @@ void loop() {
   if (Serial.available()) {
     String input = Serial.readStringUntil('\n');
     input.replace(',', '\n');
-    input.replace(';', '\n');
     input.replace('-', '\n');
-    input.replace('.', '\n');
+    input.replace('–', '\n');
+    input.replace('—', '\n');
     input.trim();
 
     int start = 0;
@@ -84,13 +83,13 @@ void loop() {
       if (spaceIndex == -1) break;
       int endIndex = input.indexOf('\n', spaceIndex);
 
-      String currentNote = input.substring(start, spaceIndex);
+      String currNote = input.substring(start, spaceIndex);
       int durationEnd = (endIndex != -1) ? endIndex : input.length();
       String durationStr = input.substring(spaceIndex + 1, durationEnd);
       int durationMs = durationStr.toInt();
 
-      int freq = getFrequency(currentNote);
-      Note note(freq, (long)durationMs * 1000, currentNote);
+      int freq = getFrequency(currNote);
+      Note note(freq, (long)durationMs * 1000, currNote);
       // note.play(speakerPin);
       note.play(0);
 
