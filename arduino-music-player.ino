@@ -80,14 +80,19 @@ void loop() {
     int start = 0;
     while (start < input.length()) {
       int spaceIndex = input.indexOf(' ', start);
-      if (spaceIndex == -1) break;
+      if (spaceIndex == -1) {
+        break;
+      }
       int endIndex = input.indexOf('\n', spaceIndex);
 
       String currNote = input.substring(start, spaceIndex);
-      int durationEnd = (endIndex != -1) ? endIndex : input.length();
+      int durationEnd = ((endIndex != -1) ? endIndex : input.length());
       String durationStr = input.substring(spaceIndex + 1, durationEnd);
-      int durationMs = durationStr.toInt();
 
+      currNote.trim();
+      durationStr.trim();
+
+      int durationMs = durationStr.toInt();
       int freq = getFrequency(currNote);
       Note note(freq, (long)durationMs * 1000, currNote);
       // note.play(speakerPin);
