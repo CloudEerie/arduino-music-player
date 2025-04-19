@@ -6,8 +6,8 @@ const char hotCrossBuns[] PROGMEM = // Hot Cross Buns
   "C5 400, C5 400, C5 400, C5 400, D5 400, D5 400, D5 400, D5 400, "
   "E5 400, D5 400, C5 400";
 
-// const int speakerPin = A5;            
-// const int ledPin = 13;                
+const int speakerPin = A0;            
+bool debugSerialMode = false;
 
 const int noteHz[] = {  // Default frequencies, A minor scale
   440, 493, 525, 588, 658, 701, 786, 880
@@ -37,14 +37,14 @@ public:
     Serial.println(" microseconds");
 
     if (frequency == 0) {
-      delayMicroseconds(durationMicros);
+      delayMicroseconds(durationMicros); // rest
       return;
     }
-    long startMicros = micros();
-    long elapsed;
-    while ((elapsed = micros() - startMicros) < durationMicros) {
-      int toneVal = (elapsed * frequency / 500000) % 2;
-      // digitalWrite(pin, toneVal);
+
+    if (debugSerialMode == false) {
+      digitalWrite(pin, HIGH);
+      delayMicroseconds(durationMicros);
+      digitalWrite(pin, LOW);
     }
   }
 };
@@ -61,8 +61,9 @@ int getFrequency(const String& noteStr) {
 
 void setup() {
   Serial.begin(9600);
-  // pinMode(speakerPin, OUTPUT);
-  // pinMode(ledPin, OUTPUT);
+  if (debugSerialMode == false) {
+    pinMode(speakerPin, OUTPUT);
+  }
 
   Serial.println("Enter notes as NOTE then DURATION, with commas or dashes as delimiters.");
   Serial.println("Example: E5 400, D5 400, C5 400, NA 200");
@@ -71,6 +72,8 @@ void setup() {
 void loop() {
   if (Serial.available()) {
     String input = Serial.readStringUntil('\n');
+
+    // Dash or comma to delimit notes from another
     input.replace(',', '\n');
     input.replace('-', '\n');
     input.replace('–', '\n');
@@ -79,27 +82,34 @@ void loop() {
 
     int start = 0;
     while (start < input.length()) {
-      int spaceIndex = input.indexOf(' ', start);
+      int endIndex = input.indexOf('\n', start);
+      if (endIndex == -1) endIndex = input.length();
+
+      String noteEntered = input.substring(start, endIndex);
+      noteEntered.trim();  // Trim leading/trailing spaces
+
+      int spaceIndex = noteEntered.indexOf(' ');
       if (spaceIndex == -1) {
-        break;
+        Serial.println("Invalid format, skipping: " + noteEntered);
+        start = endIndex + 1;
+        continue;
       }
-      int endIndex = input.indexOf('\n', spaceIndex);
 
-      String currNote = input.substring(start, spaceIndex);
-      int durationEnd = ((endIndex != -1) ? endIndex : input.length());
-      String durationStr = input.substring(spaceIndex + 1, durationEnd);
-
+      String currNote = noteEntered.substring(0, spaceIndex);
+      String durationStr = noteEntered.substring(spaceIndex + 1);
       currNote.trim();
       durationStr.trim();
 
       int durationMs = durationStr.toInt();
       int freq = getFrequency(currNote);
       Note note(freq, (long)durationMs * 1000, currNote);
-      // note.play(speakerPin);
-      note.play(0);
+      note.play(speakerPin);
 
-      start = durationEnd + 1;
+      delay(100);
+      start = endIndex + 1;
     }
+
     Serial.println("Finished playing input.");
   }
 }
+
