@@ -49,11 +49,12 @@ public:
     }
 
     if (debugSerialMode == false) {
-      digitalWrite(pin, HIGH);
-      delay(durationMs);
-      digitalWrite(pin, LOW);
+      tone(pin, frequency, durationMs); // Start playing
+      delay(durationMs);               
+      noTone(pin); // Stop playing                    
     }
   }
+
 };
 
 struct Song {
@@ -160,4 +161,3 @@ void loop() {
     }
   }
 }
-
