@@ -156,6 +156,11 @@ void loop() {
       int songNumber = input.toInt();
       playSongByNumber(songNumber);
     }
+    /*else if (input.startsWith("SAVE SONG")) {
+      input.replace("SAVE SONG", "");
+      input.trim();
+      // Work in Progress
+    }*/
     else {
       playNoteSequence(input);
     }
