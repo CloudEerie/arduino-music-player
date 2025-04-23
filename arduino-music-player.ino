@@ -7,20 +7,21 @@ const char hotCrossBuns[] PROGMEM =
   "E5 300, D5 300, C5 300";
 
 const char happyBirthday[] PROGMEM =
-  "G4 400, G4 400, A4 600, G4 600, C5 600, B4 800, NA 200, "
-  "G4 400, G4 400, A4 600, G4 600, D5 600, C5 800, NA 200, "
-  "G4 400, G4 400, G5 600, E5 600, C5 600, B4 600, A4 800, NA 200, "
-  "F5 400, F5 400, E5 600, C5 600, D5 600, C5 800";
-
+  "G5 300, G5 300, A4 600, G5 600, C5 600, B4 800, NA 200, "
+  "G5 400, G5 400, A4 600, G5 600, D5 600, C5 800, NA 200, "
+  "G5 400, G5 400, G5 600, E5 600, C5 600, B4 600, A4 800, NA 200, "
+  "G5 400, G5 400, E5 600, C5 600, D5 600, C5 800";
 
 const int buzzerPin = A0;
 bool debugSerialMode = false;
+int currNumSongs = 2;
+const int maxNumSongs = 12;
 
 const int noteHz[] = {
   440, 493, 525, 588, 658, 701, 786, 880
 };
 
-const char* noteNames[] = { // Default frequencies, A minor scale
+const char* noteNames[] = {
   "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5"
 };
 
@@ -48,29 +49,28 @@ public:
       return;
     }
 
-    if (debugSerialMode == false) {
-      tone(pin, frequency, durationMs); // Start playing
-      delay(durationMs);               
-      noTone(pin); // Stop playing                    
+    if (!debugSerialMode) {
+      tone(pin, frequency, durationMs);
+      delay(durationMs);
+      noTone(pin);
     }
   }
-
 };
 
 struct Song {
   const char* name;
-  const char* data;
+  const char* premadeSongPtr; // PROGMEM source
+  String customSongData;      // Dynamic input
+  bool isPremade;
 };
 
-const Song songLibrary[] = {
-  { "Hot Cross Buns", hotCrossBuns },
-  { "Happy Birthday", happyBirthday}
+Song songLibrary[maxNumSongs] = {
+  { "Hot Cross Buns", hotCrossBuns, "", true },
+  { "Happy Birthday", happyBirthday, "", true }
 };
 
 int getFrequency(const String& noteStr) {
-  if (noteStr == "NA") {
-    return 0;
-  }
+  if (noteStr == "NA") return 0;
   for (int i = 0; i < 8; i++) {
     if (noteStr == noteNames[i]) {
       return noteHz[i];
@@ -120,28 +120,35 @@ void playNoteSequence(const String& input) {
 }
 
 void playSongByNumber(int songNumber) {
-  const int songCount = sizeof(songLibrary) / sizeof(songLibrary[0]);
-  if ((songNumber > 0) && (songNumber <= songCount)) {
-    char buffer[512];
-    strcpy_P(buffer, songLibrary[songNumber - 1].data);
+  if ((songNumber > 0) && (songNumber <= currNumSongs)) {
+    Song song = songLibrary[songNumber - 1];
+
     Serial.print("Playing: ");
-    Serial.println(songLibrary[songNumber - 1].name);
-    playNoteSequence(String(buffer));
-  }
-  else {
+    Serial.println(song.name);
+
+    if (song.isPremade) {
+      char buffer[512];
+      strncpy_P(buffer, song.premadeSongPtr, sizeof(buffer) - 1);
+      buffer[sizeof(buffer) - 1] = '\0';
+      playNoteSequence(String(buffer));
+    }
+    else {
+      playNoteSequence(song.customSongData);
+    }
+  } else {
     Serial.println("Error: Invalid song number.");
   }
 }
 
-
 void setup() {
   Serial.begin(9600);
-  if (debugSerialMode == false) {
+  if (!debugSerialMode) {
     pinMode(buzzerPin, OUTPUT);
   }
 
-  Serial.println("\nEnter notes as NOTE then DURATION, with commas or dashes as delimiters.\n(Example: E5 400, D5 400, C5 400, NA 200)");
-  Serial.println("Or enter: PLAY SONG #\n(Example: play song 1 for Hot Cross Buns)");
+  Serial.println("\nEnter notes as NOTE then DURATION, with commas or dashes as delimiters.");
+  Serial.println("(Example: E5 400, D5 400, C5 400, NA 200)");
+  Serial.println("Or enter: PLAY SONG # (Example: play song 1 for Hot Cross Buns)");
 }
 
 void loop() {
@@ -156,11 +163,19 @@ void loop() {
       int songNumber = input.toInt();
       playSongByNumber(songNumber);
     }
-    /*else if (input.startsWith("SAVE SONG")) {
+    else if (input.startsWith("SAVE SONG")) {
       input.replace("SAVE SONG", "");
       input.trim();
-      // Work in Progress
-    }*/
+      if (currNumSongs >= maxNumSongs) {
+        Serial.println("Error: Song limit reached.");
+      }
+      else {
+        Song newSong = { "Custom Song", nullptr, input, false };
+        songLibrary[currNumSongs] = newSong;
+        currNumSongs++;
+        Serial.println("Song saved successfully.");
+      }
+    }
     else {
       playNoteSequence(input);
     }
