@@ -13,7 +13,7 @@ const char happyBirthday[] PROGMEM =
   "G5 400, G5 400, E5 600, C5 600, D5 600, C5 800";
 
 const int buzzerPin = A0;
-bool debugSerialMode = false;
+bool debugSerialMode = false; // Set to true to view Serial outputs w/o any Arduino connected
 int currNumSongs = 2;
 const int maxNumSongs = 12;
 
@@ -21,7 +21,7 @@ const int noteHz[] = {
   440, 493, 525, 588, 658, 701, 786, 880
 };
 
-const char* noteNames[] = {
+const char* noteNames[] = { // A minor scale as default
   "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5"
 };
 
@@ -59,14 +59,14 @@ public:
 
 struct Song {
   const char* name;
-  const char* premadeSongPtr; // PROGMEM source
-  String customSongData;      // Dynamic input
+  const char* premadeSongPtr; 
+  String customSongData;      
   bool isPremade;
 };
 
 Song songLibrary[maxNumSongs] = {
   { "Hot Cross Buns", hotCrossBuns, "", true },
-  { "Happy Birthday", happyBirthday, "", true }
+  { "Happy Birthday", happyBirthday, "", true } // Keep encountering bug where can't play song 2, but no issue with indexing or PROGMEM?
 };
 
 int getFrequency(const String& noteStr) {
@@ -135,18 +135,19 @@ void playSongByNumber(int songNumber) {
     else {
       playNoteSequence(song.customSongData);
     }
-  } else {
+  }
+  else {
     Serial.println("Error: Invalid song number.");
   }
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600); // Adjustments didn't seem to have much change on output?
   if (!debugSerialMode) {
     pinMode(buzzerPin, OUTPUT);
   }
 
-  Serial.println("\nEnter notes as NOTE then DURATION, with commas or dashes as delimiters.");
+  Serial.println("\nEnter notes as NOTE then DURATION, with commas or dashes as delimiters."); // Input formatting: Separate note from duration with spaces, separate each note+duration combo with comma or dash
   Serial.println("(Example: E5 400, D5 400, C5 400, NA 200)");
   Serial.println("Or enter: PLAY SONG # (Example: play song 1 for Hot Cross Buns)");
 }
